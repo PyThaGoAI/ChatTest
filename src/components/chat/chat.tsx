@@ -1,91 +1,183 @@
-As vrea sa improvizizi si sa adaugi in meniu 10 instante care crezi ca ar fiu cele mai bune, proiecte open source
+"use client";
 
+import ChatTopbar from "./chat-topbar";
+import ChatList from "./chat-list";
+import ChatBottombar from "./chat-bottombar";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import { BytesOutputParser } from "@langchain/core/output_parsers";
+import { Attachment, ChatRequestOptions, generateId } from "ai";
+import { Message, useChat } from "ai/react";
+import React, { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
+import useChatStore from "@/app/hooks/useChatStore";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 
-instantele ar trebui sa fie foarte utile si sa aiba iconite..as vrea s ate gandesti la sidebr c ala un toolbar de ai super avansat dar din instante opensource, ca bolt.net, sau lobechat, sau langflow
+export interface ChatProps {
+  id: string;
+  initialMessages: Message[] | [];
+  isMobile?: boolean;
+}
 
+export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
+  const {
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    stop,
+    setMessages,
+    setInput,
+    reload,
+  } = useChat({
+    id,
+    initialMessages,
+    onResponse: (response) => {
+      if (response) {
+        setLoadingSubmit(false);
+      }
+    },
+    onFinish: (message) => {
+      const savedMessages = getMessagesById(id);
+      saveMessages(id, [...savedMessages, message]);
+      setLoadingSubmit(false);
+      router.replace(`/c/${id}`);
+    },
+    onError: (error) => {
+      setLoadingSubmit(false);
+      router.replace("/");
+      console.error(error.message);
+      console.error(error.cause);
+    },
+  });
+  const [loadingSubmit, setLoadingSubmit] = React.useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const base64Images = useChatStore((state) => state.base64Images);
+  const setBase64Images = useChatStore((state) => state.setBase64Images);
+  const selectedModel = useChatStore((state) => state.selectedModel);
+  const saveMessages = useChatStore((state) => state.saveMessages);
+  const getMessagesById = useChatStore((state) => state.getMessagesById);
+  const router = useRouter();
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Docker CMS</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; display: flex; }
-        #sidebar { width: 250px; background: #333; color: white; height: 100vh; padding: 15px; transition: width 0.3s; overflow: hidden; }
-        #sidebar.collapsed { width: 50px; }
-        #sidebar button { width: 100%; margin: 5px 0; }
-        #content { flex-grow: 1; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid black; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .toggle-btn { background: #444; color: white; border: none; padding: 10px; cursor: pointer; }
-    </style>
-</head>
-<body>
-    <div id="sidebar">
-        <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-        <h3>Open Source Instances</h3>
-        <button onclick="addInstance('WordPress')">WordPress</button>
-        <button onclick="addInstance('Nextcloud')">Nextcloud</button>
-        <button onclick="addInstance('GitLab')">GitLab</button>
-        <button onclick="addInstance('Jenkins')">Jenkins</button>
-        <button onclick="addInstance('MongoDB')">MongoDB</button>
-        <button onclick="addInstance('MySQL')">MySQL</button>
-        <button onclick="addInstance('Redis')">Redis</button>
-        <button onclick="addInstance('PostgreSQL')">PostgreSQL</button>
-        <button onclick="addInstance('Nginx')">Nginx</button>
-        <button onclick="addInstance('Apache')">Apache</button>
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    window.history.replaceState({}, "", `/c/${id}`);
+
+    if (!selectedModel) {
+      toast.error("Please select a model");
+      return;
+    }
+
+    const userMessage: Message = {
+      id: generateId(),
+      role: "user",
+      content: input,
+    };
+
+    setLoadingSubmit(true);
+
+    const attachments: Attachment[] = base64Images
+      ? base64Images.map((image) => ({
+          contentType: "image/base64",
+          url: image,
+        }))
+      : [];
+
+    const requestOptions: ChatRequestOptions = {
+      options: {
+        body: {
+          selectedModel: selectedModel,
+        },
+      },
+      ...(base64Images && {
+        data: {
+          images: base64Images,
+        },
+        experimental_attachments: attachments,
+      }),
+    };
+
+    handleSubmit(e, requestOptions);
+    saveMessages(id, [...messages, userMessage]);
+    setBase64Images(null);
+  };
+
+  const removeLatestMessage = () => {
+    const updatedMessages = messages.slice(0, -1);
+    setMessages(updatedMessages);
+    saveMessages(id, updatedMessages);
+    return updatedMessages;
+  };
+
+  const handleStop = () => {
+    stop();
+    saveMessages(id, [...messages]);
+    setLoadingSubmit(false);
+  };
+
+  return (
+    <div className="flex flex-col w-full max-w-3xl h-full">
+      <ChatTopbar
+        isLoading={isLoading}
+        chatId={id}
+        messages={messages}
+        setMessages={setMessages}
+      />
+
+      {messages.length === 0 ? (
+        <div className="flex flex-col h-full w-full items-center gap-4 justify-center">
+          <Image
+            src="/ollama.png"
+            alt="AI"
+            width={40}
+            height={40}
+            className="h-16 w-14 object-contain dark:invert"
+          />
+          <p className="text-center text-base text-muted-foreground">
+            How can I help you today?
+          </p>
+          <ChatBottombar
+            input={input}
+            handleInputChange={handleInputChange}
+            handleSubmit={onSubmit}
+            isLoading={isLoading}
+            stop={handleStop}
+            setInput={setInput}
+          />
+        </div>
+      ) : (
+        <>
+          <ChatList
+            messages={messages}
+            isLoading={isLoading}
+            loadingSubmit={loadingSubmit}
+            reload={async () => {
+              removeLatestMessage();
+
+              const requestOptions: ChatRequestOptions = {
+                options: {
+                  body: {
+                    selectedModel: selectedModel,
+                  },
+                },
+              };
+
+              setLoadingSubmit(true);
+              return reload(requestOptions);
+            }}
+          />
+          <ChatBottombar
+            input={input}
+            handleInputChange={handleInputChange}
+            handleSubmit={onSubmit}
+            isLoading={isLoading}
+            stop={handleStop}
+            setInput={setInput}
+          />
+        </>
+      )}
     </div>
-    <div id="content">
-        <h2>Docker CMS</h2>
-        <button onclick="fetchContainers()">Refresh Containers</button>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="container-list"></tbody>
-        </table>
-    </div>
-    <script>
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('collapsed');
-        }
-
-        function addInstance(name) {
-            fetch('/containers/create', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: name.toLowerCase(), name: name })
-            }).then(response => response.json())
-              .then(data => alert(data.message))
-              .catch(error => alert('Error creating instance: ' + error));
-        }
-
-        async function fetchContainers() {
-            const response = await fetch('/containers');
-            const data = await response.json();
-            const tbody = document.getElementById('container-list');
-            tbody.innerHTML = '';
-            data.forEach(container => {
-                const row = `<tr>
-                    <td>${container.id}</td>
-                    <td>${container.name}</td>
-                    <td>${container.status}</td>
-                    <td>
-                        <button onclick="startContainer('${container.id}')">Start</button>
-                        <button onclick="stopContainer('${container.id}')">Stop</button>
-                        <button onclick="removeContainer('${container.id}')">Remove</button>
-                    </td>
-                </tr>`;
-                tbody.innerHTML += row;
-            });
-        }
-    </script>
-</body>
-</html>
+  );
+}
