@@ -78,39 +78,6 @@ export function Sidebar({
             )}
             New chat
           </div>
-
-
-           <div className="flex gap-3 items-center ">
-            {!isCollapsed && !isMobile && (
-              <Image
-                src="/pytgicon.png"
-                alt="AI"
-                width={28}
-                height={28}
-                className="dark:invert hidden 2xl:block"
-              />
-            )}
-            Online Search
-          </div>
-
-
-           <div className="flex gap-3 items-center ">
-            {!isCollapsed && !isMobile && (
-              <Image
-                src="/pytgicon.png"
-                alt="AI"
-                width={28}
-                height={28}
-                className="dark:invert hidden 2xl:block"
-              />
-            )}
-            New Flow
-          </div>
-
-          
-
-
-          
           <SquarePen size={18} className="shrink-0 w-4 h-4" />
         </Button>
 
