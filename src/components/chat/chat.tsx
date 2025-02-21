@@ -7,12 +7,13 @@ import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import { BytesOutputParser } from "@langchain/core/output_parsers";
 import { Attachment, ChatRequestOptions, generateId } from "ai";
 import { Message, useChat } from "ai/react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import useChatStore from "@/app/hooks/useChatStore";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 
 export interface ChatProps {
   id: string;
@@ -47,13 +48,12 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
     },
     onError: (error) => {
       setLoadingSubmit(false);
-      router.replace("/");
-      console.error(error.message);
-      console.error(error.cause);
+      toast.error("Message failed. Please try again.");
+      console.error("Chat Error:", error);
     },
   });
-  const [loadingSubmit, setLoadingSubmit] = React.useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
+
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
   const base64Images = useChatStore((state) => state.base64Images);
   const setBase64Images = useChatStore((state) => state.setBase64Images);
   const selectedModel = useChatStore((state) => state.selectedModel);
@@ -105,10 +105,11 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
   };
 
   const removeLatestMessage = () => {
-    const updatedMessages = messages.slice(0, -1);
-    setMessages(updatedMessages);
-    saveMessages(id, updatedMessages);
-    return updatedMessages;
+    setMessages((prev) => {
+      const updated = prev.slice(0, -1);
+      saveMessages(id, updated);
+      return updated;
+    });
   };
 
   const handleStop = () => {
@@ -118,7 +119,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
   };
 
   return (
-    <div className="flex flex-col w-full max-w-3xl h-full">
+    <div className={`flex flex-col w-full h-full max-w-3xl bg-gradient-to-br from-gray-50/30 to-purple-50/30 backdrop-blur-lg rounded-xl shadow-xl ${isMobile ? 'h-screen' : 'h-full'}`}>
       <ChatTopbar
         isLoading={isLoading}
         chatId={id}
@@ -126,58 +127,96 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
         setMessages={setMessages}
       />
 
-      {messages.length === 0 ? (
-        <div className="flex flex-col h-full w-full items-center gap-4 justify-center">
-          <Image
-            src="/ollama.png"
-            alt="AI"
-            width={40}
-            height={40}
-            className="h-16 w-14 object-contain dark:invert"
-          />
-          <p className="text-center text-base text-muted-foreground">
-            How can I help you today?
-          </p>
-          <ChatBottombar
-            input={input}
-            handleInputChange={handleInputChange}
-            handleSubmit={onSubmit}
-            isLoading={isLoading}
-            stop={handleStop}
-            setInput={setInput}
-          />
-        </div>
-      ) : (
-        <>
-          <ChatList
-            messages={messages}
-            isLoading={isLoading}
-            loadingSubmit={loadingSubmit}
-            reload={async () => {
-              removeLatestMessage();
+      <AnimatePresence>
+        {messages.length === 0 ? (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col h-full w-full items-center gap-6 justify-center px-4"
+          >
+            <motion.div 
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+              className="relative h-32 w-32"
+            >
+              <Image
+                src="/pytgicon.png"
+                alt="AI"
+                fill
+                className="object-contain dark:invert opacity-80"
+              />
+            </motion.div>
+            <p className="text-center text-lg text-gray-600 font-medium">
+              How can I help you today?
+            </p>
+            <ChatBottombar
+              input={input}
+              handleInputChange={handleInputChange}
+              handleSubmit={onSubmit}
+              isLoading={isLoading}
+              stop={handleStop}
+              setInput={setInput}
+            />
+          </motion.div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin scrollbar-thumb-purple-200 scrollbar-track-transparent">
+              <AnimatePresence initial={false}>
+                {messages.map((message, index) => (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-[85%] rounded-2xl p-4 ${
+                      message.role === 'user' 
+                        ? 'bg-purple-600 text-white ml-12' 
+                        : 'bg-white shadow-sm border border-gray-100 mr-12'
+                    }`}>
+                      <ChatList
+                        messages={[message]}
+                        isLoading={isLoading && index === messages.length - 1}
+                        loadingSubmit={loadingSubmit}
+                        reload={async () => {
+                          removeLatestMessage();
+                          const requestOptions: ChatRequestOptions = {
+                            options: {
+                              body: {
+                                selectedModel: selectedModel,
+                              },
+                            },
+                          };
+                          setLoadingSubmit(true);
+                          return reload(requestOptions);
+                        }}
+                      />
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
 
-              const requestOptions: ChatRequestOptions = {
-                options: {
-                  body: {
-                    selectedModel: selectedModel,
-                  },
-                },
-              };
-
-              setLoadingSubmit(true);
-              return reload(requestOptions);
-            }}
-          />
-          <ChatBottombar
-            input={input}
-            handleInputChange={handleInputChange}
-            handleSubmit={onSubmit}
-            isLoading={isLoading}
-            stop={handleStop}
-            setInput={setInput}
-          />
-        </>
-      )}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="border-t border-gray-100/30 px-4 pt-4"
+            >
+              <ChatBottombar
+                input={input}
+                handleInputChange={handleInputChange}
+                handleSubmit={onSubmit}
+                isLoading={isLoading}
+                stop={handleStop}
+                setInput={setInput}
+              />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
