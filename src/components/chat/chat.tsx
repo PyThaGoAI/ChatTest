@@ -52,6 +52,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
       console.error(error.cause);
     },
   });
+  
   const [loadingSubmit, setLoadingSubmit] = React.useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const base64Images = useChatStore((state) => state.base64Images);
@@ -118,7 +119,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
   };
 
   return (
-    <div className="flex flex-col w-full max-w-3xl h-full">
+    <div className="flex flex-col w-full max-w-3xl h-full bg-gradient-to-br from-background/95 via-muted/10 to-background/90 backdrop-blur-xl border border-muted/20 shadow-2xl rounded-xl overflow-hidden">
       <ChatTopbar
         isLoading={isLoading}
         chatId={id}
@@ -127,16 +128,19 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
       />
 
       {messages.length === 0 ? (
-        <div className="flex flex-col h-full w-full items-center gap-4 justify-center">
-          <Image
-            src="/pytgicon.png"
-            alt="AI"
-            width={40}
-            height={40}
-            className="h-16 w-14 object-contain dark:invert"
-          />
-          <p className="text-center text-base text-muted-foreground">
-            How can I help you today?
+        <div className="flex flex-col h-full w-full items-center gap-6 justify-center px-4 py-8">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-xl animate-pulse" />
+            <Image
+              src="/pytgicon.png"
+              alt="AI"
+              width={80}
+              height={80}
+              className="h-20 w-20 object-contain dark:invert filter brightness-110 drop-shadow-lg relative z-10 transition-transform duration-300 group-hover:scale-105"
+            />
+          </div>
+          <p className="text-center text-lg font-medium bg-gradient-to-r from-foreground/90 to-muted-foreground bg-clip-text text-transparent">
+            How can I assist you today?
           </p>
           <ChatBottombar
             input={input}
@@ -168,14 +172,16 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
               return reload(requestOptions);
             }}
           />
-          <ChatBottombar
-            input={input}
-            handleInputChange={handleInputChange}
-            handleSubmit={onSubmit}
-            isLoading={isLoading}
-            stop={handleStop}
-            setInput={setInput}
-          />
+          <div className="border-t border-muted/20">
+            <ChatBottombar
+              input={input}
+              handleInputChange={handleInputChange}
+              handleSubmit={onSubmit}
+              isLoading={isLoading}
+              stop={handleStop}
+              setInput={setInput}
+            />
+          </div>
         </>
       )}
     </div>
