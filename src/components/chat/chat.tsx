@@ -135,9 +135,25 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
             height={40}
             className="h-16 w-14 object-contain dark:invert"
           />
-          <p className="text-center text-base text-muted-foreground">
-            How can I help you today?
-          </p>
+         <div className="flex flex-col h-full w-full items-center gap-4 justify-center">
+  <div className="flex gap-6 items-center">
+    <div className="flex flex-col items-center">
+      <i className="fas fa-search text-3xl text-muted-foreground"></i>
+      <p className="text-center text-sm">Search</p>
+    </div>
+    <div className="flex flex-col items-center">
+      <i className="fas fa-user-plus text-3xl text-muted-foreground"></i>
+      <p className="text-center text-sm">New Agent</p>
+    </div>
+    <div className="flex flex-col items-center">
+      <i className="fas fa-random text-3xl text-muted-foreground"></i>
+      <p className="text-center text-sm">New Flow</p>
+    </div>
+  </div>
+  <p className="text-center text-base text-muted-foreground">
+    How can I help you today?
+  </p>
+</div>
           <ChatBottombar
             input={input}
             handleInputChange={handleInputChange}
