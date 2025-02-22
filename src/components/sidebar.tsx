@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MoreHorizontal, SquarePen, Trash2, Search, PlusSquare, Bot } from "lucide-react";
+import { MoreHorizontal, SquarePen, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Suspense, useMemo } from "react";
@@ -24,7 +24,6 @@ import {
 } from "./ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import useChatStore from "@/app/hooks/useChatStore";
-import Image from "next/image";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -45,53 +44,41 @@ export function Sidebar({ isCollapsed, chatId, closeSidebar }: SidebarProps) {
     [chats]
   );
 
-  const menuItems = [
-    { label: "New Chat", icon: SquarePen, href: "/" },
-    { label: "Search", icon: Search, href: "#" },
-    { label: "Create Flow", icon: PlusSquare, href: "#" },
-    { label: "Create Agent", icon: Bot, href: "#" },
-  ];
-
   return (
     <div
       data-collapsed={isCollapsed}
       className="relative justify-between group lg:bg-accent/20 lg:dark:bg-card/35 flex flex-col h-full gap-4 p-2 data-[collapsed=true]:p-2"
     >
       <div className="flex flex-col justify-between p-2">
-        <div className="flex flex-col gap-1">
-          {menuItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "flex gap-3 items-center justify-start h-14 text-sm xl:text-lg"
-              )}
-              onClick={() => {
-                router.push(item.href);
-                closeSidebar?.();
-              }}
-            >
-              <item.icon className="shrink-0 w-4 h-4" />
-              {item.label}
-              {item.label === "New Chat" && !isCollapsed && (
-                <Image
-                  src="/pytgicon.png"
-                  alt="AI"
-                  width={28}
-                  height={28}
-                  className="dark:invert hidden 2xl:block ml-auto"
-                  aria-hidden="true"
-                />
-              )}
-            </Link>
-          ))}
-        </div>
+        <Button
+          onClick={() => {
+            router.push("/");
+            closeSidebar?.();
+          }}
+          variant="ghost"
+          className="flex justify-between w-full h-14 text-sm xl:text-lg font-normal items-center"
+          aria-label="Start new chat"
+        >
+          <div className="flex gap-3 items-center">
+            {!isCollapsed && (
+              <Image
+                src="/pytgicon.png"
+                alt="AI"
+                width={28}
+                height={28}
+                className="dark:invert hidden 2xl:block"
+                aria-hidden="true"
+              />
+            )}
+            New chat
+          </div>
+          <SquarePen size={18} className="shrink-0 w-4 h-4" />
+        </Button>
 
         <div className="flex flex-col pt-10 gap-2">
-          <p className="pl-4 text-xs text-muted-foreground">Recent chats</p>
+          <p className="pl-4 text-xs text-muted-foreground">Your chats</p>
           <Suspense fallback={<SidebarSkeleton />}>
-            <ScrollArea className="h-[calc(100vh-18rem)] pr-3">
+            <ScrollArea className="h-[calc(100vh-12rem)] pr-3">
               {sortedChats.map(([id, chat]) => (
                 <Link
                   key={id}
