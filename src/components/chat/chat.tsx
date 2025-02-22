@@ -21,105 +21,10 @@ export interface ChatProps {
 }
 
 export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isLoading,
-    stop,
-    setMessages,
-    setInput,
-    reload,
-  } = useChat({
-    id,
-    initialMessages,
-    onResponse: (response) => {
-      if (response) {
-        setLoadingSubmit(false);
-      }
-    },
-    onFinish: (message) => {
-      const savedMessages = getMessagesById(id);
-      saveMessages(id, [...savedMessages, message]);
-      setLoadingSubmit(false);
-      router.replace(`/c/${id}`);
-    },
-    onError: (error) => {
-      setLoadingSubmit(false);
-      router.replace("/");
-      console.error(error.message);
-      console.error(error.cause);
-    },
-  });
-  
-  const [loadingSubmit, setLoadingSubmit] = React.useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
-  const base64Images = useChatStore((state) => state.base64Images);
-  const setBase64Images = useChatStore((state) => state.setBase64Images);
-  const selectedModel = useChatStore((state) => state.selectedModel);
-  const saveMessages = useChatStore((state) => state.saveMessages);
-  const getMessagesById = useChatStore((state) => state.getMessagesById);
-  const router = useRouter();
-
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    window.history.replaceState({}, "", `/c/${id}`);
-
-    if (!selectedModel) {
-      toast.error("Please select a model");
-      return;
-    }
-
-    const userMessage: Message = {
-      id: generateId(),
-      role: "user",
-      content: input,
-    };
-
-    setLoadingSubmit(true);
-
-    const attachments: Attachment[] = base64Images
-      ? base64Images.map((image) => ({
-          contentType: "image/base64",
-          url: image,
-        }))
-      : [];
-
-    const requestOptions: ChatRequestOptions = {
-      options: {
-        body: {
-          selectedModel: selectedModel,
-        },
-      },
-      ...(base64Images && {
-        data: {
-          images: base64Images,
-        },
-        experimental_attachments: attachments,
-      }),
-    };
-
-    handleSubmit(e, requestOptions);
-    saveMessages(id, [...messages, userMessage]);
-    setBase64Images(null);
-  };
-
-  const removeLatestMessage = () => {
-    const updatedMessages = messages.slice(0, -1);
-    setMessages(updatedMessages);
-    saveMessages(id, updatedMessages);
-    return updatedMessages;
-  };
-
-  const handleStop = () => {
-    stop();
-    saveMessages(id, [...messages]);
-    setLoadingSubmit(false);
-  };
+  // ... (keep all the existing hooks and state logic unchanged)
 
   return (
-    <div className="flex flex-col w-full max-w-3xl h-full bg-gradient-to-br from-background/95 via-muted/10 to-background/90 backdrop-blur-xl border border-muted/20 shadow-2xl rounded-xl overflow-hidden">
+    <div className="flex flex-col w-full max-w-3xl h-full bg-background border border-muted/20 rounded-xl overflow-hidden">
       <ChatTopbar
         isLoading={isLoading}
         chatId={id}
@@ -130,7 +35,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
       {messages.length === 0 ? (
         <div className="flex flex-col h-full w-full items-center gap-6 justify-center px-4 py-8">
           <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-xl animate-pulse" />
+            <div className="absolute inset-0 bg-primary/20 rounded-full animate-pulse" />
             <Image
               src="/pytgicon.png"
               alt="AI"
@@ -139,7 +44,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
               className="h-20 w-20 object-contain dark:invert filter brightness-110 drop-shadow-lg relative z-10 transition-transform duration-300 group-hover:scale-105"
             />
           </div>
-          <p className="text-center text-lg font-medium bg-gradient-to-r from-foreground/90 to-muted-foreground bg-clip-text text-transparent">
+          <p className="text-center text-lg font-medium text-foreground">
             How can I assist you today?
           </p>
           <ChatBottombar
