@@ -1,18 +1,16 @@
-"use client"; // Indică faptul că acest cod este destinat să ruleze pe client (în browser), nu pe server
+"use client";
 
-// Importă modulele și componentele necesare pentru a construi sidebar-ul
-import Link from "next/link"; // Permite crearea de linkuri în aplicația Next.js
-import { MoreHorizontal, SquarePen, Trash2 } from "lucide-react"; // Iconițe din pachetul lucide-react
-import { cn } from "@/lib/utils"; // Funcție utilitară pentru a aplica clase CSS conditionate
-import { Button, buttonVariants } from "@/components/ui/button"; // Componente de buton personalizate
-import { Message } from "ai/react"; // Tipul de mesaj utilizat în aplicația de chat
-import Image from "next/image"; // Permite încărcarea și optimizarea imaginilor în Next.js
-import { Suspense, useEffect, useState } from "react"; // Suspense pentru încărcarea asincronă a componentelor
-import SidebarSkeleton from "./sidebar-skeleton"; // Skeleton de încărcare pentru sidebar
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"; // Componente pentru avatar
-import UserSettings from "./user-settings"; // Componente pentru setările utilizatorului
-import { ScrollArea, Scrollbar } from "@radix-ui/react-scroll-area"; // Componente pentru zonele de scroll personalizate
-import PullModel from "./pull-model"; // Componente pentru modelele de tip pull (preluare date)
+import Link from "next/link";
+import { MoreHorizontal, SquarePen, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Message } from "ai/react";
+import Image from "next/image";
+import { Suspense, useEffect, useState } from "react";
+import SidebarSkeleton from "./sidebar-skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import UserSettings from "./user-settings";
+import { ScrollArea, ScrollBar } from "@radix-ui/react-scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -20,27 +18,27 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "./ui/dialog"; // Componente pentru dialoguri și feronerie vizuală
+} from "./ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu"; // Componente pentru meniurile derulante
-import { TrashIcon } from "@radix-ui/react-icons"; // Iconiță de coș de gunoi din Radix UI
-import { useRouter } from "next/navigation"; // Hook pentru navigarea între pagini
-import useChatStore from "@/app/hooks/useChatStore"; // Hook personalizat pentru stocarea chat-urilor
+} from "./ui/dropdown-menu";
+import { useRouter } from "next/navigation";
+import useChatStore, { Chat } from "@/app/hooks/useChatStore";
+import { Input } from "./ui/input";
+import { Badge } from "./ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
-// Definirea tipului pentru proprietățile componentei Sidebar
 interface SidebarProps {
-  isCollapsed: boolean; // Starea colapsată a sidebar-ului
-  messages: Message[]; // Mesajele din chat
-  onClick?: () => void; // Funcție opțională care va fi apelată la un click
-  isMobile: boolean; // Determină dacă dispozitivul este mobil
-  chatId: string; // ID-ul chat-ului curent
-  closeSidebar?: () => void; // Funcție opțională pentru a închide sidebar-ul
+  isCollapsed: boolean;
+  messages: Message[];
+  onClick?: () => void;
+  isMobile: boolean;
+  chatId: string;
+  closeSidebar?: () => void;
 }
 
-// Componentele Sidebar
 export function Sidebar({
   messages,
   isCollapsed,
@@ -48,134 +46,140 @@ export function Sidebar({
   chatId,
   closeSidebar,
 }: SidebarProps) {
-  const router = useRouter(); // Hook-ul pentru navigarea în aplicație
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  
+  const { chats, handleDelete } = useChatStore();
+  
+  const filteredChats = Object.entries(chats)
+    .filter(([id, chat]) => {
+      const searchMatch = chat.messages[0]?.content?.toLowerCase().includes(searchQuery.toLowerCase());
+      const categoryMatch = selectedCategory === "all" || chat.category === selectedCategory;
+      return searchMatch && categoryMatch;
+    })
+    .sort(([, a], [, b]) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  // Accesarea stării globale a chat-urilor din store-ul de chat
-  const chats = useChatStore((state) => state.chats);
-  const handleDelete = useChatStore((state) => state.handleDelete);
+  const calculateStorageUsage = (chats: Record<string, Chat>) => {
+    const size = new TextEncoder().encode(JSON.stringify(chats)).length;
+    return `${(size / 1024).toFixed(1)}KB`;
+  };
 
   return (
     <div
-      data-collapsed={isCollapsed} // Setează atributul collapsed în funcție de starea isCollapsed
-      className="relative justify-between group lg:bg-accent/20 lg:dark:bg-card/35 flex flex-col h-full gap-4 p-2 data-[collapsed=true]:p-2 "
+      data-collapsed={isCollapsed}
+      className="relative group lg:bg-accent/20 flex flex-col h-full gap-4 p-2 transition-all duration-300 ease-in-out"
     >
-      <div className=" flex flex-col justify-between p-2 max-h-fit overflow-y-auto">
-        {/* Buton pentru crearea unui chat nou */}
+      {/* Header Section */}
+      <div className="space-y-4">
         <Button
           onClick={() => {
-            router.push("/"); // Navighează către pagina principală
-            if (closeSidebar) {
-              closeSidebar(); // Dacă există funcția de închidere a sidebar-ului, o apelează
-            }
+            router.push("/");
+            closeSidebar?.();
           }}
-          variant="ghost" // Variantele de stil pentru buton
-          className="flex justify-between w-full h-14 text-sm xl:text-lg font-normal items-center "
+          variant="ghost"
+          className="w-full h-14 flex justify-between items-center rounded-lg bg-primary/5 hover:bg-primary/10"
         >
-          <div className="flex gap-3 items-center ">
-            {!isCollapsed && !isMobile && (
-              <Image
-                src="/pytgicon.png"
-                alt="AI"
-                width={28}
-                height={28}
-                className="dark:invert hidden 2xl:block"
-              />
-            )}
-            New chat
+          <div className="flex items-center gap-3">
+            <SquarePen className="h-5 w-5" />
+            {!isCollapsed && !isMobile && "New Chat"}
           </div>
-          <SquarePen size={18} className="shrink-0 w-4 h-4" /> {/* Iconița pentru un nou chat */}
+          {!isCollapsed && !isMobile && (
+            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+              <span className="text-xs">⌘</span>N
+            </kbd>
+          )}
         </Button>
 
-        {/* Afișează lista de chat-uri ale utilizatorului */}
-        <div className="flex flex-col pt-10 gap-2">
-          <p className="pl-4 text-xs text-muted-foreground">Your chats</p>
-          <Suspense fallback> {/* Suspense pentru încărcarea chat-urilor */}
-            {chats &&
-              Object.entries(chats)
-                .sort(
-                  ([, a], [, b]) =>
-                    new Date(b.createdAt).getTime() -
-                    new Date(a.createdAt).getTime()
-                )
-                .map(([id, chat]) => (
-                  <Link
-                    key={id}
-                    href={`/c/${id}`} // Link către detaliile unui chat
-                    className={cn(
-                      {
-                        [buttonVariants({ variant: "secondaryLink" })]:
-                          id === chatId, // Dacă chat-ul este activ, aplică stilul corespunzător
-                        [buttonVariants({ variant: "ghost" })]: id !== chatId, // Dacă nu este activ, aplică alt stil
-                      },
-                      "flex justify-between w-full h-14 text-base font-normal items-center "
-                    )}
-                  >
-                    <div className="flex gap-3 items-center truncate">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-normal ">
-                          {chat.messages.length > 0
-                            ? chat.messages[0].content
-                            : ""}
-                        </span>
-                      </div>
-                    </div>
-                    {/* Meniu derulant pentru opțiuni de chat */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="flex justify-end items-center"
-                          onClick={(e) => e.stopPropagation()} // Previi propagarea evenimentului
-                        >
-                          <MoreHorizontal size={15} className="shrink-0" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className=" ">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              className="w-full flex gap-2 hover:text-red-500 text-red-500 justify-start items-center"
-                              onClick={(e) => e.stopPropagation()} // Previi propagarea evenimentului
-                            >
-                              <Trash2 className="shrink-0 w-4 h-4" />
-                              Delete chat {/* Opțiune de ștergere a chat-ului */}
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader className="space-y-4">
-                              <DialogTitle>Delete chat?</DialogTitle> {/* Titlu dialog pentru confirmare ștergere */}
-                              <DialogDescription>
-                                Are you sure you want to delete this chat? This
-                                action cannot be undone.
-                              </DialogDescription>
-                              <div className="flex justify-end gap-2">
-                                <Button variant="outline">Cancel</Button> {/* Buton pentru anulare */}
-                                <Button
-                                  variant="destructive"
-                                  onClick={(e) => {
-                                    e.stopPropagation(); // Previi propagarea evenimentului
-                                    handleDelete(id); // Șterge chat-ul din store
-                                    router.push("/"); // Navighează înapoi pe pagina principală
-                                  }}
-                                >
-                                  Delete
-                                </Button> {/* Buton pentru confirmarea ștergerii */}
-                              </div>
-                            </DialogHeader>
-                          </DialogContent>
-                        </Dialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </Link>
-                ))}
-          </Suspense>
+        {/* Search and Categories */}
+        <div className="space-y-2">
+          <Input
+            placeholder="Search chats..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="rounded-lg bg-background shadow-sm"
+          />
+          <ScrollArea className="w-full overflow-x-auto pb-2">
+            <div className="flex gap-2">
+              {['all', 'work', 'personal', 'archived'].map((category) => (
+                <Badge
+                  key={category}
+                  variant={selectedCategory === category ? 'default' : 'outline'}
+                  onClick={() => setSelectedCategory(category)}
+                  className="cursor-pointer capitalize transition-colors hover:bg-primary/10"
+                >
+                  {category}
+                </Badge>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
       </div>
 
-      {/* Setări utilizator */}
-      <div className="justify-end px-2 py-2 w-full border-t">
-        <UserSettings /> {/* Componenta pentru setările utilizatorului */}
+      {/* Chat List */}
+      <ScrollArea className="flex-1 overflow-y-auto">
+        <div className="space-y-1">
+          <Suspense fallback={<SidebarSkeleton />}>
+            {filteredChats.map(([id, chat]) => (
+              <Tooltip key={id}>
+                <Link
+                  href={`/c/${id}`}
+                  className={cn(
+                    buttonVariants({
+                      variant: id === chatId ? 'secondary' : 'ghost',
+                      size: 'lg',
+                    }),
+                    "group w-full h-14 justify-between rounded-lg px-3 transition-all",
+                    "hover:bg-accent/50 hover:shadow-sm",
+                    "data-[active=true]:border-primary data-[active=true]:bg-accent/50"
+                  )}
+                  data-active={id === chatId}
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8 border">
+                      <AvatarImage src={chat.avatar} />
+                      <AvatarFallback className="bg-primary text-white font-medium">
+                        {chat.messages[0]?.content[0]?.toUpperCase() || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="truncate text-sm">
+                      {chat.messages[0]?.content || 'New Chat'}
+                    </span>
+                  </div>
+
+                  <TooltipTrigger>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-destructive/20 hover:text-destructive"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDelete(id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  
+                  <TooltipContent side="right">
+                    <p>Delete chat</p>
+                  </TooltipContent>
+                </Link>
+              </Tooltip>
+            ))}
+          </Suspense>
+        </div>
+        <ScrollBar orientation="vertical" />
+      </ScrollArea>
+
+      {/* Footer Section */}
+      <div className="border-t pt-4 space-y-4">
+        <UserSettings />
+        <div className="text-center text-xs text-muted-foreground">
+          <p>Storage used: {calculateStorageUsage(chats)}</p>
+          <p className="mt-1">Version: {process.env.NEXT_PUBLIC_APP_VERSION}</p>
+        </div>
       </div>
     </div>
   );
