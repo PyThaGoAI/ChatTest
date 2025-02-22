@@ -1,11 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import { Suspense } from "react";
+import { Button } from "@/components/ui/button";
+import { Message } from "ai/react";
+import Image from "next/image";
 import useChatStore from "@/app/hooks/useChatStore";
 import {
+  MoreHorizontal,
+  SquarePen,
+  Trash2,
   Search,
   Workflow,
   Bot,
@@ -16,24 +21,50 @@ import {
   Activity,
   Settings,
   HelpCircle,
-  SquarePen,
 } from "lucide-react";
+import { ScrollArea } from "@radix-ui/react-scroll-area";
+import SidebarSkeleton from "./sidebar-skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import UserSettings from "./user-settings";
+import PullModel from "./pull-model";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 interface SidebarProps {
   isCollapsed: boolean;
+  messages: Message[];
+  onClick?: () => void;
   isMobile: boolean;
   chatId: string;
   closeSidebar?: () => void;
 }
 
-export function Sidebar({ isCollapsed, isMobile, chatId, closeSidebar }: SidebarProps) {
+export function Sidebar({
+  messages,
+  isCollapsed,
+  isMobile,
+  chatId,
+  closeSidebar,
+}: SidebarProps) {
   const router = useRouter();
   const chats = useChatStore((state) => state.chats);
+  const handleDelete = useChatStore((state) => state.handleDelete);
 
   return (
     <div
       data-collapsed={isCollapsed}
-      className="relative flex flex-col h-full gap-4 p-2"
+      className="relative flex flex-col h-full gap-4 p-2 lg:bg-accent/20 lg:dark:bg-card/35"
     >
       {/* New Chat Button */}
       <Button
@@ -48,7 +79,7 @@ export function Sidebar({ isCollapsed, isMobile, chatId, closeSidebar }: Sidebar
         {!isCollapsed && "New Chat"}
       </Button>
 
-      {/* Buttons Section */}
+      {/* Extra Buttons */}
       <div className="flex flex-col gap-2">
         <Button variant="ghost" className="flex items-center gap-3 w-full justify-start">
           <Search size={18} />
@@ -99,6 +130,45 @@ export function Sidebar({ isCollapsed, isMobile, chatId, closeSidebar }: Sidebar
           <HelpCircle size={18} />
           {!isCollapsed && "Help Center"}
         </Button>
+      </div>
+
+      {/* Chats Section */}
+      <div className="flex flex-col pt-10 gap-2">
+        <p className="pl-4 text-xs text-muted-foreground">Your chats</p>
+        <Suspense fallback={<SidebarSkeleton />}>
+          {chats &&
+            Object.entries(chats)
+              .sort(([, a], [, b]) => b.timestamp - a.timestamp)
+              .map(([id, chat]) => (
+                <Button
+                  key={id}
+                  onClick={() => router.push(`/chat/${id}`)}
+                  variant="ghost"
+                  className="flex justify-between w-full text-sm font-normal items-center"
+                >
+                  <div className="flex gap-3 items-center">
+                    <Avatar>
+                      <AvatarImage src={chat.avatar} />
+                      <AvatarFallback>{chat.name[0]}</AvatarFallback>
+                    </Avatar>
+                    {!isCollapsed && chat.name}
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <MoreHorizontal size={18} />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" onClick={() => handleDelete(id)}>
+                          <Trash2 size={18} className="mr-2" />
+                          Delete
+                        </Button>
+                      </DialogTrigger>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </Button>
+              ))}
+        </Suspense>
       </div>
     </div>
   );
