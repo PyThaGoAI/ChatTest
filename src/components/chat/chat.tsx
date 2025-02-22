@@ -129,7 +129,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
       {messages.length === 0 ? (
         <div className="flex flex-col h-full w-full items-center gap-4 justify-center">
           <Image
-            src="/ollama.png"
+            src="/pytgicon.png"
             alt="AI"
             width={40}
             height={40}
