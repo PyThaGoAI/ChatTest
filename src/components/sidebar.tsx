@@ -59,17 +59,22 @@ export function Sidebar({
   return (
     <div
       data-collapsed={isCollapsed}
-      className="relative group lg:bg-accent/20 flex flex-col h-full gap-4 p-2 transition-all duration-300"
+      className="relative group flex flex-col h-full gap-4 p-2 transition-all duration-300
+                bg-gradient-to-b from-background/95 to-muted/5 backdrop-blur-lg
+                border-r border-muted/20 shadow-xl"
     >
+      {/* Header Section */}
       <div className="space-y-4">
-        {/* New Chat Button with Improved Styling */}
+        {/* New Chat Button */}
         <Button
           onClick={() => {
             router.push("/");
             closeSidebar?.();
           }}
           variant="ghost"
-          className="w-full h-14 flex justify-between items-center rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors"
+          className="w-full h-14 flex justify-between items-center rounded-xl
+                    bg-primary/10 hover:bg-primary/20 transition-all
+                    border border-muted/20 shadow-sm hover:shadow-md"
         >
           <div className="flex items-center gap-3">
             {!isCollapsed && !isMobile && (
@@ -78,95 +83,126 @@ export function Sidebar({
                 alt="AI"
                 width={28}
                 height={28}
-                className="dark:invert"
+                className="dark:invert filter brightness-125 drop-shadow-sm"
               />
             )}
-            <span className="text-sm xl:text-base">New Chat</span>
+            <span className="text-sm xl:text-base font-medium bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              New Chat
+            </span>
           </div>
-          <SquarePen size={18} className="shrink-0" />
+          <SquarePen size={18} className="shrink-0 text-primary/80" />
         </Button>
 
         {/* Search Input */}
-        <div className="px-2">
+        <div className="relative px-2 group">
           <input
             type="text"
-            placeholder="Search chats..."
+            placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg bg-background border focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+            className="w-full px-4 py-2.5 rounded-xl bg-background/95 backdrop-blur-sm
+                      border border-muted/20 focus:border-primary/30
+                      focus:ring-2 focus:ring-primary/10 focus:ring-offset-2
+                      text-sm placeholder:text-muted-foreground/60
+                      transition-all shadow-sm"
           />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 group-focus-within:opacity-100">
+            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium">
+              ⌘F
+            </kbd>
+          </div>
         </div>
       </div>
 
-      {/* Chat List with Improved Layout */}
+      {/* Chat List */}
       <ScrollArea className="flex-1 overflow-y-auto">
         <div className="space-y-1">
-          <p className="px-2 text-xs text-muted-foreground pb-2">Recent chats</p>
+          <p className="px-2 text-xs font-medium text-muted-foreground/60 pb-2">
+            Recent Chats
+          </p>
           <Suspense fallback={<SidebarSkeleton />}>
             {filteredChats.map(([id, chat]) => (
               <div
                 key={id}
                 className={cn(
-                  "group flex items-center justify-between rounded-lg px-2 mx-2",
+                  "group flex items-center justify-between rounded-xl px-2 mx-1",
+                  "transition-all duration-200 hover:bg-muted/10",
                   id === chatId 
-                    ? "bg-accent/50 border border-primary"
-                    : "hover:bg-accent/30"
+                    ? "bg-gradient-to-r from-primary/5 to-primary/10 border-l-4 border-primary"
+                    : "hover:border-l-2 border-primary/20"
                 )}
               >
                 <Link
                   href={`/c/${id}`}
                   className="flex-1 flex items-center gap-3 py-3"
                 >
-                  <Avatar className="h-8 w-8 border">
-                    <AvatarFallback className="bg-primary text-white">
+                  <Avatar className="h-9 w-9 border-2 border-primary/10 shadow-sm">
+                    <AvatarFallback className="bg-gradient-to-br from-primary/15 to-primary/5 text-foreground/80 font-medium">
                       {chat.messages[0]?.content[0]?.toUpperCase() || '?'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm truncate">
+                    <p className="text-sm font-medium truncate text-foreground/90">
                       {chat.messages[0]?.content || 'New Chat'}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(chat.createdAt).toLocaleDateString()}
+                    <p className="text-xs text-muted-foreground/60 font-light">
+                      {new Date(chat.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </p>
                   </div>
                 </Link>
 
-                {/* Delete Button with Hover Effect */}
+                {/* Delete Button */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-destructive/20"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity
+                                rounded-lg hover:bg-destructive/10 text-destructive/80
+                                hover:text-destructive border border-transparent
+                                hover:border-destructive/10"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent 
+                    align="end"
+                    className="rounded-xl border border-muted/20 shadow-xl"
+                  >
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button
                           variant="ghost"
-                          className="w-full flex gap-2 text-destructive hover:bg-destructive/10 justify-start"
+                          className="w-full flex gap-2 text-destructive/90 hover:bg-destructive/5 justify-start"
                         >
                           <Trash2 className="h-4 w-4" />
                           Delete Conversation
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="rounded-2xl border-muted/20">
                         <DialogHeader>
-                          <DialogTitle className="text-destructive">
+                          <DialogTitle className="text-foreground/90">
                             Confirm Deletion
                           </DialogTitle>
-                          <DialogDescription>
+                          <DialogDescription className="text-muted-foreground/80">
                             This action will permanently delete the chat history.
                           </DialogDescription>
                         </DialogHeader>
                         <div className="flex justify-end gap-2 mt-4">
-                          <Button variant="outline">Cancel</Button>
+                          <Button 
+                            variant="outline"
+                            className="rounded-lg border-muted/20 hover:border-primary/30"
+                          >
+                            Cancel
+                          </Button>
                           <Button
                             variant="destructive"
+                            className="rounded-lg bg-destructive/90 hover:bg-destructive shadow-sm"
                             onClick={() => {
                               handleDelete(id);
                               if(chatId === id) router.push("/");
@@ -185,8 +221,8 @@ export function Sidebar({
         </div>
       </ScrollArea>
 
-      {/* User Settings with Border */}
-      <div className="border-t pt-4">
+      {/* User Settings */}
+      <div className="border-t border-muted/20 pt-4">
         <UserSettings />
       </div>
     </div>
