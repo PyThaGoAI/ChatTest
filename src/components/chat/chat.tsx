@@ -43,7 +43,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
       const savedMessages = getMessagesById(id);
       saveMessages(id, [...savedMessages, message]);
       setLoadingSubmit(false);
-      router.replace(/c/${id});
+      router.replace(`/c/${id}`);
     },
     onError: (error) => {
       setLoadingSubmit(false);
@@ -63,7 +63,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    window.history.replaceState({}, "", /c/${id});
+    window.history.replaceState({}, "", `/c/${id}`);
 
     if (!selectedModel) {
       toast.error("Please select a model");
@@ -129,7 +129,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
       {messages.length === 0 ? (
         <div className="flex flex-col h-full w-full items-center gap-4 justify-center">
           <Image
-            src="/pytgicon.png"
+            src="/ollama.png"
             alt="AI"
             width={40}
             height={40}
