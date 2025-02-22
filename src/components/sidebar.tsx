@@ -1,31 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Suspense } from "react";
-import { Button } from "@/components/ui/button";
+import { MoreHorizontal, SquarePen, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Message } from "ai/react";
 import Image from "next/image";
-import useChatStore from "@/app/hooks/useChatStore";
-import {
-  MoreHorizontal,
-  SquarePen,
-  Trash2,
-  Search,
-  Workflow,
-  Bot,
-  BarChart3,
-  LineChart,
-  Users,
-  Truck,
-  Activity,
-  Settings,
-  HelpCircle,
-} from "lucide-react";
-import { ScrollArea } from "@radix-ui/react-scroll-area";
+import { Suspense, useEffect, useState } from "react";
 import SidebarSkeleton from "./sidebar-skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import UserSettings from "./user-settings";
+import { ScrollArea, Scrollbar } from "@radix-ui/react-scroll-area";
 import PullModel from "./pull-model";
 import {
   Dialog,
@@ -40,6 +25,9 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { TrashIcon } from "@radix-ui/react-icons";
+import { useRouter } from "next/navigation";
+import useChatStore from "@/app/hooks/useChatStore";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -58,117 +46,128 @@ export function Sidebar({
   closeSidebar,
 }: SidebarProps) {
   const router = useRouter();
+
   const chats = useChatStore((state) => state.chats);
   const handleDelete = useChatStore((state) => state.handleDelete);
 
   return (
     <div
       data-collapsed={isCollapsed}
-      className="relative flex flex-col h-full gap-4 p-2 lg:bg-accent/20 lg:dark:bg-card/35"
+      className="relative justify-between group lg:bg-accent/20 lg:dark:bg-card/35 flex flex-col h-full gap-4 p-2 data-[collapsed=true]:p-2 "
     >
-      {/* New Chat Button */}
-      <Button
-        onClick={() => {
-          router.push("/");
-          if (closeSidebar) closeSidebar();
-        }}
-        variant="ghost"
-        className="flex items-center gap-3 w-full justify-start"
-      >
-        <SquarePen size={18} />
-        {!isCollapsed && "New Chat"}
-      </Button>
-
-      {/* Extra Buttons */}
-      <div className="flex flex-col gap-2">
-        <Button variant="ghost" className="flex items-center gap-3 w-full justify-start">
-          <Search size={18} />
-          {!isCollapsed && "Search"}
+      <div className=" flex flex-col justify-between p-2 max-h-fit overflow-y-auto">
+        <Button
+          onClick={() => {
+            router.push("/");
+            if (closeSidebar) {
+              closeSidebar();
+            }
+          }}
+          variant="ghost"
+          className="flex justify-between w-full h-14 text-sm xl:text-lg font-normal items-center "
+        >
+          <div className="flex gap-3 items-center ">
+            {!isCollapsed && !isMobile && (
+              <Image
+                src="/pytgicon.png"
+                alt="AI"
+                width={28}
+                height={28}
+                className="dark:invert hidden 2xl:block"
+              />
+            )}
+            New chat
+          </div>
+          <SquarePen size={18} className="shrink-0 w-4 h-4" />
         </Button>
 
-        <Button variant="ghost" className="flex items-center gap-3 w-full justify-start">
-          <Workflow size={18} />
-          {!isCollapsed && "Create a Flow"}
-        </Button>
-
-        <Button variant="ghost" className="flex items-center gap-3 w-full justify-start">
-          <Bot size={18} />
-          {!isCollapsed && "Create an Agent"}
-        </Button>
-
-        <Button variant="ghost" className="flex items-center gap-3 w-full justify-start">
-          <BarChart3 size={18} />
-          {!isCollapsed && "Reports"}
-        </Button>
-
-        <Button variant="ghost" className="flex items-center gap-3 w-full justify-start">
-          <LineChart size={18} />
-          {!isCollapsed && "Analytics"}
-        </Button>
-
-        <Button variant="ghost" className="flex items-center gap-3 w-full justify-start">
-          <Users size={18} />
-          {!isCollapsed && "Team Management"}
-        </Button>
-
-        <Button variant="ghost" className="flex items-center gap-3 w-full justify-start">
-          <Truck size={18} />
-          {!isCollapsed && "Delivery Insights"}
-        </Button>
-
-        <Button variant="ghost" className="flex items-center gap-3 w-full justify-start">
-          <Activity size={18} />
-          {!isCollapsed && "Performance Tracker"}
-        </Button>
-
-        <Button variant="ghost" className="flex items-center gap-3 w-full justify-start">
-          <Settings size={18} />
-          {!isCollapsed && "Settings"}
-        </Button>
-
-        <Button variant="ghost" className="flex items-center gap-3 w-full justify-start">
-          <HelpCircle size={18} />
-          {!isCollapsed && "Help Center"}
-        </Button>
+        <div className="flex flex-col pt-10 gap-2">
+          <p className="pl-4 text-xs text-muted-foreground">Your chats</p>
+          <Suspense fallback>
+            {chats &&
+              Object.entries(chats)
+                .sort(
+                  ([, a], [, b]) =>
+                    new Date(b.createdAt).getTime() -
+                    new Date(a.createdAt).getTime()
+                )
+                .map(([id, chat]) => (
+                  <Link
+                    key={id}
+                    href={/c/${id}}
+                    className={cn(
+                      {
+                        [buttonVariants({ variant: "secondaryLink" })]:
+                          id === chatId,
+                        [buttonVariants({ variant: "ghost" })]: id !== chatId,
+                      },
+                      "flex justify-between w-full h-14 text-base font-normal items-center "
+                    )}
+                  >
+                    <div className="flex gap-3 items-center truncate">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-normal ">
+                          {chat.messages.length > 0
+                            ? chat.messages[0].content
+                            : ""}
+                        </span>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="flex justify-end items-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal size={15} className="shrink-0" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className=" ">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="w-full flex gap-2 hover:text-red-500 text-red-500 justify-start items-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="shrink-0 w-4 h-4" />
+                              Delete chat
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader className="space-y-4">
+                              <DialogTitle>Delete chat?</DialogTitle>
+                              <DialogDescription>
+                                Are you sure you want to delete this chat? This
+                                action cannot be undone.
+                              </DialogDescription>
+                              <div className="flex justify-end gap-2">
+                                <Button variant="outline">Cancel</Button>
+                                <Button
+                                  variant="destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(id);
+                                    router.push("/");
+                                  }}
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </DialogHeader>
+                          </DialogContent>
+                        </Dialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </Link>
+                ))}
+          </Suspense>
+        </div>
       </div>
 
-      {/* Chats Section */}
-      <div className="flex flex-col pt-10 gap-2">
-        <p className="pl-4 text-xs text-muted-foreground">Your chats</p>
-        <Suspense fallback={<SidebarSkeleton />}>
-          {chats &&
-            Object.entries(chats)
-              .sort(([, a], [, b]) => b.timestamp - a.timestamp)
-              .map(([id, chat]) => (
-                <Button
-                  key={id}
-                  onClick={() => router.push(`/chat/${id}`)}
-                  variant="ghost"
-                  className="flex justify-between w-full text-sm font-normal items-center"
-                >
-                  <div className="flex gap-3 items-center">
-                    <Avatar>
-                      <AvatarImage src={chat.avatar} />
-                      <AvatarFallback>{chat.name[0]}</AvatarFallback>
-                    </Avatar>
-                    {!isCollapsed && chat.name}
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger>
-                      <MoreHorizontal size={18} />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" onClick={() => handleDelete(id)}>
-                          <Trash2 size={18} className="mr-2" />
-                          Delete
-                        </Button>
-                      </DialogTrigger>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </Button>
-              ))}
-        </Suspense>
+      <div className="justify-end px-2 py-2 w-full border-t">
+        <UserSettings />
       </div>
     </div>
   );
