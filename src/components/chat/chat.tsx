@@ -21,10 +21,10 @@ export interface ChatProps {
 }
 
 export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
-  // ... (toată logica rămâne neschimbată)
+  // ... (păstrăm toată logica existentă neschimbată)
 
   return (
-    <div className="flex flex-col w-full max-w-3xl h-full bg-background/95 border border-muted/10 rounded-xl overflow-hidden backdrop-blur-sm">
+    <div className="flex flex-col w-full max-w-3xl h-full bg-gradient-to-br from-background/95 via-muted/10 to-background/90 backdrop-blur-xl border border-muted/20 rounded-xl overflow-hidden">
       <ChatTopbar
         isLoading={isLoading}
         chatId={id}
@@ -35,15 +35,16 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
       {messages.length === 0 ? (
         <div className="flex flex-col h-full w-full items-center gap-6 justify-center px-4 py-8">
           <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-xl animate-pulse" />
             <Image
               src="/pytgicon.png"
               alt="AI"
               width={80}
               height={80}
-              className="h-20 w-20 object-contain dark:invert filter brightness-95 transition-transform duration-300 group-hover:scale-110"
+              className="h-20 w-20 object-contain dark:invert filter brightness-110 relative z-10 transition-transform duration-300 group-hover:scale-105"
             />
           </div>
-          <p className="text-center text-lg font-medium text-foreground/90">
+          <p className="text-center text-lg font-medium bg-gradient-to-r from-foreground/90 to-muted-foreground bg-clip-text text-transparent">
             How can I assist you today?
           </p>
           <ChatBottombar
@@ -76,7 +77,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
               return reload(requestOptions);
             }}
           />
-          <div className="border-t border-muted/10">
+          <div className="border-t border-muted/20">
             <ChatBottombar
               input={input}
               handleInputChange={handleInputChange}
