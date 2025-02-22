@@ -60,7 +60,7 @@ export function Sidebar({
     <div
       data-collapsed={isCollapsed}
       className="relative group flex flex-col h-full gap-4 p-2 transition-all duration-300
-                bg-gradient-to-b from-background/95 to-muted/5 backdrop-blur-lg
+               
                 border-r border-muted/20 shadow-xl"
     >
       {/* Header Section */}
